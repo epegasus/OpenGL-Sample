@@ -15,40 +15,42 @@ import java.nio.FloatBuffer
 
 class Triangle {
 
+    // Vertex and fragment shaders define how the triangle is drawn
     private val vertexShaderCode = """
         uniform mat4 uMVPMatrix;
         attribute vec4 vPosition;
-        void main() {
-            gl_Position = uMVPMatrix * vPosition;
-        }
+        void main() { gl_Position = uMVPMatrix * vPosition; }
     """
-
     private val fragmentShaderCode = """
         precision mediump float;
         uniform vec4 vColor;
-        void main() {
-            gl_FragColor = vColor;
-        }
+        void main() { gl_FragColor = vColor; }
     """
 
     private val vertexBuffer: FloatBuffer
     private val program: Int
-    private val vertexCount = TRIANGLE_COORDS.size / COORDS_PER_VERTEX
-    private val vertexStride = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
-    private val color = floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+    private val color = floatArrayOf(0.6f, 0.7f, 0.2f, 1.0f) // Triangle color
 
     init {
-        val bb = ByteBuffer.allocateDirect(TRIANGLE_COORDS.size * 4).apply {
+        // Triangle vertex coordinates
+        val coords = floatArrayOf(
+            0f, 0.6f, 0f,   // Top
+            -0.5f, -0.3f, 0f,  // Bottom-left
+            0.5f, -0.3f, 0f   // Bottom-right
+        )
+
+        // Create buffer for vertices
+        vertexBuffer = ByteBuffer.allocateDirect(coords.size * 4).run {
             order(ByteOrder.nativeOrder())
-        }
-        vertexBuffer = bb.asFloatBuffer().apply {
-            put(TRIANGLE_COORDS)
-            position(0)
+            asFloatBuffer().apply {
+                put(coords)
+                position(0)
+            }
         }
 
+        // Compile shaders and link the OpenGL program
         val vertexShader = MyGLRenderer.loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
         val fragmentShader = MyGLRenderer.loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
-
         program = GLES20.glCreateProgram().apply {
             GLES20.glAttachShader(this, vertexShader)
             GLES20.glAttachShader(this, fragmentShader)
@@ -56,30 +58,25 @@ class Triangle {
         }
     }
 
+    // Draws the triangle using the provided transformation matrix
     fun draw(mvpMatrix: FloatArray) {
         GLES20.glUseProgram(program)
 
-        val positionHandle = GLES20.glGetAttribLocation(program, "vPosition").apply {
-            GLES20.glEnableVertexAttribArray(this)
-            GLES20.glVertexAttribPointer(this, COORDS_PER_VERTEX, GLES20.GL_FLOAT, false, vertexStride, vertexBuffer)
-        }
-
+        // Get attribute and uniform locations
+        val positionHandle = GLES20.glGetAttribLocation(program, "vPosition")
         val colorHandle = GLES20.glGetUniformLocation(program, "vColor")
-        GLES20.glUniform4fv(colorHandle, 1, color, 0)
-
         val mvpMatrixHandle = GLES20.glGetUniformLocation(program, "uMVPMatrix")
+
+        // Pass vertex data
+        GLES20.glEnableVertexAttribArray(positionHandle)
+        GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, vertexBuffer)
+
+        // Pass color and transformation matrix
+        GLES20.glUniform4fv(colorHandle, 1, color, 0)
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
 
-        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, vertexCount)
+        // Draw the triangle
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 3)
         GLES20.glDisableVertexAttribArray(positionHandle)
-    }
-
-    companion object {
-        const val COORDS_PER_VERTEX = 3
-        private val TRIANGLE_COORDS = floatArrayOf(
-            0f, 0.6f, 0.0f, // Top
-            -0.5f, -0.3f, 0.0f, // Bottom left
-            0.5f, -0.3f, 0.0f // Bottom right
-        )
     }
 }

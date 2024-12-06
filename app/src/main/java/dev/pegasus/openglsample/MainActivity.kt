@@ -32,6 +32,6 @@ class MainActivity : AppCompatActivity() {
     private fun initGlSurfaceView() {
         binding.glSurfaceView.setEGLContextClientVersion(2)
         binding.glSurfaceView.setRenderer(MyGLRenderer())
-        binding.glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
+        binding.glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
     }
 }

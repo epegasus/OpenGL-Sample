@@ -17,34 +17,38 @@ import javax.microedition.khronos.opengles.GL10
 class MyGLRenderer : GLSurfaceView.Renderer {
 
     private var triangle: Triangle? = null
-    private val mvpMatrix = FloatArray(16)
+    private val mvpMatrix = FloatArray(16) // Model-View-Projection matrix
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val rotationMatrix = FloatArray(16)
-    var angle: Float = 0f
+    private var angle = 0f // Rotation angle for the triangle
 
-    override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
-        GLES20.glClearColor(0.0f, 0.0f, 0.2f, 1.0f)
-        triangle = Triangle()
+    override fun onSurfaceCreated(gl: GL10, config: EGLConfig) {
+        GLES20.glClearColor(0f, 0f, 0.2f, 1f) // Set background color
+        triangle = Triangle() // Initialize the triangle
     }
 
-    override fun onDrawFrame(unused: GL10) {
-        val scratch = FloatArray(16)
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+    override fun onDrawFrame(gl: GL10) {
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT) // Clear screen
 
+        // Set up the camera (view matrix)
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, -3f, 0f, 0f, 0f, 0f, 1f, 0f)
+
+        // Combine projection and view matrices
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
+        // Apply rotation to the triangle
         Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, 1f)
+        val scratch = FloatArray(16)
         Matrix.multiplyMM(scratch, 0, mvpMatrix, 0, rotationMatrix, 0)
 
-        triangle?.draw(scratch)
+        triangle?.draw(scratch) // Draw the triangle
     }
 
-    override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
-        GLES20.glViewport(0, 0, width, height)
+    override fun onSurfaceChanged(gl: GL10, width: Int, height: Int) {
+        GLES20.glViewport(0, 0, width, height) // Set viewport size
         val ratio = width.toFloat() / height
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 7f)
+        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 7f) // Set projection matrix
     }
 
     companion object {
